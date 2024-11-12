@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Danu Analytics{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
+  </head>
+  <body>
+    <div class="sidebar" id="sidebar">
+      <a
+        href="{% url 'home' %}"
+        class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}"
+        >Home</a
+      >
+      <a
+        href="{% url 'chatbot' %}"
+        class="{% if request.resolver_match.url_name == 'chatbot' %}active{% endif %}"
+        >Chatbot</a
+      >
+      <a
+        href="{% url 'map' %}"
+        class="{% if request.resolver_match.url_name == 'map' %}active{% endif %}"
+        >Map</a
+      >
+      <a
+        href="{% url 'predictions' %}"
+        class="{% if request.resolver_match.url_name == 'predictions' %}active{% endif %}"
+        >Predictions</a
+      >
+      <a
+        href="{% url 'products' %}"
+        class="{% if request.resolver_match.url_name == 'products' %}active{% endif %}"
+        >Products</a
+      >
+      <a
+        href="{% url 'stores' %}"
+        class="{% if request.resolver_match.url_name == 'stores' %}active{% endif %}"
+        >Stores</a
+      >
+      <button onclick="toggleSidebar()">Toggle</button>
+    </div>
+    <div class="content">
+      {% block content %}
+      <!-- Page Content Here -->
+      {% endblock %}
+    </div>
+
+    <script>
+      function toggleSidebar() {
+        var sidebar = document.getElementById("sidebar");
+        if (sidebar.style.width === "50px") {
+          sidebar.style.width = "200px";
+        } else {
+          sidebar.style.width = "50px";
+        }
+      }
+    </script>
+  </body>
+</html>
