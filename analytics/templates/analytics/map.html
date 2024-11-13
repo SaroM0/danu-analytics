@@ -1,10 +1,221 @@
 {% extends 'analytics/base.html' %}
 
-{% block title %}
-Map
-{% endblock %}
+{% block title %}Mapa Tiendas{% endblock %}
 
 {% block content %}
-<h1>Chatbot Page</h1>
-<p>Welcome to the Chatbot page!</p>
+<h1>Mapa de Ventas</h1>
+<div class="main-container">
+    <!-- Columna Izquierda -->
+    <div class="left-column">
+        <div class="row">
+            <div class="box ventas-totales">
+                <h4>Ventas Totales</h4>
+                <span id="total-sales">£-</span>
+            </div>
+            <div class="box num-tiendas">
+                <h4>Número de Tiendas</h4>
+                <span id="num-stores">-</span>
+            </div>
+            <div class="box tipos-alcohol">
+                <h4>Tipos de Alcohol</h4>
+                <span id="types-alcohol">-</span>
+            </div>
+        </div>
+        <div id="map-container" style="width: 100%; height: 600px;"></div>
+    </div>
+
+    <!-- Columna Derecha -->
+    <div class="right-column">
+        <div class="row">
+            <div class="box ventas-por-tienda">
+                <h4>Ventas por Tienda</h4>
+                <span id="sales-by-store">£-</span>
+            </div>
+            <div class="box cantidad-inventario">
+                <h4>Cantidad en Inventario</h4>
+                <span id="inventory-quantity">-</span>
+            </div>
+            <div class="box num-productos-diferentes">
+                <h4>Número de Productos Diferentes</h4>
+                <span id="num-different-products">-</span>
+            </div>
+        </div>
+        <div class="charts-container">
+            <div class="chart" id="chart1">Top 10 Productos Vendidos Por Cantidad</div>
+            <div class="chart" id="chart2">Top 10 Productos Vendidos Por Ingreso</div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+
+        function formatCurrency(value) {
+            return `£${value.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
+        // Inicializar el mapa
+        const map = L.map('map-container').setView([53.0, -1.5], 6);
+
+        function initializeCharts() {
+            const emptyData = {
+                x: Array(10).fill(""),
+                y: Array(10).fill(0),
+                type: 'bar'
+            };
+            const layout = {
+                title: '',
+                width: 500,
+                height: 300,
+                transition: {
+                    duration: 700,
+                    easing: "cubic-in-out"
+                }
+            };
+            
+            Plotly.newPlot('chart1', [emptyData], { ...layout, title: 'Top 10 Productos Vendidos Por Cantidad' });
+            Plotly.newPlot('chart2', [emptyData], { ...layout, title: 'Top 10 Productos Vendidos Por Ingreso' });
+        }
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        const cityCoordinates = {
+            'HARDERSFIELD': [53.6458, -1.7780],
+            'ASHBORNE': [53.0167, -1.7333],
+            'HORNSEY': [51.5833, -0.1167],
+            'EANVERNESS': [57.4778, -4.2247],
+            'SUTTON': [51.3600, -0.1940],
+            'BARNCOMBE': [50.7184, -3.5339],
+            'TAMWORTH': [52.6333, -1.6833],
+            'EASTHAVEN': [56.5000, -2.7500],
+            'BALLYMENA': [54.8639, -6.2761],
+            'PEMBROKE': [51.6740, -4.9158],
+            'GOULCREST': [52.0000, -1.0000],
+            'STANMORE': [51.6167, -0.3167],
+            'ALNERWICK': [55.4000, -1.7000],
+            'BLACKPOOL': [53.8175, -3.0357],
+            'CARDEND': [56.5000, -3.0000],
+            'LEESIDE': [51.7500, -0.0833],
+            'TARMSWORTH': [53.0000, -2.0000],
+            'BROMWICH': [52.5000, -2.0000],
+            'WANBORNE': [53.5000, -1.0000],
+            'LUNDY': [51.1800, -4.6667],
+            'OLDHAM': [53.5409, -2.1114],
+            'FURNESS': [54.2000, -3.2167],
+            'WINTERVALE': [51.0000, -2.0000],
+            'BREDWARDINE': [52.0000, -3.0000],
+            'BALERNO': [55.8833, -3.3500],
+            'SHARNWICK': [51.7000, -1.3000],
+            'ARBINGTON': [52.0000, -1.5000],
+            'PALPERROTH': [52.5000, -2.0000],
+            'CAERSHIRE': [51.8333, -2.3500],
+            "KNIFE'S EDGE": [50.0000, -5.0000],
+            'MOUNTMEND': [51.3000, -2.5000],
+            'LARNWICK': [53.0000, -1.5000],
+            'AYLESBURY': [51.8168, -0.8141],
+            'CULCHETH': [53.4500, -2.5000],
+            'PITMERDEN': [57.3333, -2.3167],
+            'HALIVAARA': [54.0000, -2.0000],
+            'LEWES': [50.8753, 0.0172],
+            'PAETHSMOUTH': [51.5000, -2.0000],
+            'EASTHALLOW': [54.0000, -1.5000],
+            'BULLMAR': [52.0000, -0.5000],
+            'BLACK HOLLOW': [52.5000, -1.5000],
+            'WOLFORD': [51.0000, -0.5000],
+            'PORTHCRAWL': [51.5000, -3.7000],
+            'VERITAS': [54.0000, -1.0000],
+            "PELLA'S WISH": [51.0000, -1.0000],
+            'NORFOLK': [52.6297, 1.2923],
+            'GARIGILL': [54.8000, -2.3000],
+            'ABERDEEN': [57.1497, -2.0943],
+            'GRAYCOTT': [53.0000, -1.0000],
+            'HILLFAR': [53.0000, -1.0000],
+            'GUTHRAM': [52.0000, -0.5000],
+            'DRY GULCH': [53.0000, -2.5000],
+            "BEGGAR'S HOLE": [51.0000, -0.5000],
+            'LANTEGLOS': [50.3400, -4.5800],
+            'HARTLEPOOL': [54.6900, -1.2100],
+            'CLAETHORPES': [53.5600, -0.0300],
+            'IRRAGIN': [51.5000, -2.5000],
+            'AETHELNEY': [51.0000, -2.0000],
+            'KILMARNOCK': [55.6117, -4.4958],
+            'SWORDBREAK': [52.5000, -1.5000],
+            'CESTERFIELD': [53.2300, -1.4200],
+            'LUTON': [51.8787, -0.4200],
+            'SOLARIS': [51.5000, -2.5000],
+            'KELD': [54.4000, -2.2000],
+            'CLARCTON': [51.0000, -1.5000],
+            'DONCASTER': [53.5228, -1.1285],
+            'PAENTMARWY': [53.0000, -3.0000],
+        };
+
+        // Crear marcadores para cada ciudad
+        for (const [city, coords] of Object.entries(cityCoordinates)) {
+            const marker = L.marker(coords).addTo(map).bindPopup(`<b>${city}</b>`);
+        }
+
+        initializeCharts();
+
+        // Configurar evento popupopen para detectar cuando se abre un popup
+        map.on('popupopen', function(event) {
+            const cityName = event.popup.getContent().replace(/<\/?[^>]+(>|$)/g, "").trim();
+            console.log(`City popup opened: ${cityName}`);
+            getCityData(cityName); // Llama a la función con el nombre de la ciudad
+        });
+        
+        // Función para obtener datos de una ciudad
+        function getCityData(cityName) {
+            console.log(`Fetching data for city: ${cityName}`);
+            fetch(`/get-city-data/${cityName}/`)
+                .then(response => {
+                    if (!response.ok) throw new Error("Network response was not ok");
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Data received:", data);
+                    updateDashboard(data);  // Actualiza el tablero
+                })
+                .catch(error => console.error('Error fetching city data:', error));
+        }
+
+        // Función para actualizar el dashboard con los datos de la ciudad
+        function updateDashboard(data) {
+            document.getElementById('total-sales').innerText = formatCurrency(data.total_sales || 0);
+            document.getElementById('num-stores').innerText = data.num_stores?.toLocaleString('en-GB') || '-';
+            document.getElementById('types-alcohol').innerText = data.types_of_alcohol?.toLocaleString('en-GB') || '-';
+            document.getElementById('sales-by-store').innerText = formatCurrency(data.sales_by_store || 0);
+            document.getElementById('inventory-quantity').innerText = data.inventory_quantity?.toLocaleString('en-GB') || '-';
+            document.getElementById('num-different-products').innerText = data.num_different_products?.toLocaleString('en-GB') || '-';
+
+            const layout = {
+                width: 500,
+                height: 300,
+                transition: {
+                    duration: 700,
+                    easing: "cubic-in-out"
+                }
+            };
+
+            const quantityData = data.top_products_quantity || { names: Array(10).fill(""), values: Array(10).fill(0) };
+            const incomeData = data.top_products_income || { names: Array(10).fill(""), values: Array(10).fill(0) };
+
+            Plotly.react('chart1', [{
+                x: quantityData.names,
+                y: quantityData.values,
+                type: 'bar'
+            }], { ...layout, title: 'Top 10 Productos Vendidos Por Cantidad' });
+
+            Plotly.react('chart2', [{
+                x: incomeData.names,
+                y: incomeData.values,
+                type: 'bar'
+            }], { ...layout, title: 'Top 10 Productos Vendidos Por Ingreso' });
+        }
+    });
+</script>
 {% endblock %}
