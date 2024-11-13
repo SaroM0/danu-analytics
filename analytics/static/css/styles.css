@@ -1,7 +1,7 @@
 body {
+  font-family: "Figtree", sans-serif;
   display: flex;
   margin: 0;
-  font-family: Arial, sans-serif;
 }
 
 .sidebar {
@@ -13,23 +13,45 @@ body {
   transition: 0.5s;
   padding-top: 20px;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+  position: relative;
+  margin-left: 20px;
+}
+
+.sidebar-logo {
+  max-width: 60%;
+  height: auto;
+  display: block;
+  margin: 0 auto 20px;
+  padding-top: 10px;
+  cursor: pointer;
+}
+
+.sidebar.closed .sidebar-logo {
+  max-width: 50%;
 }
 
 .sidebar a {
+  display: flex;
+  align-items: center;
   padding: 10px 15px;
   text-decoration: none;
-  font-size: 20px;
-  color: black;
-  display: block;
+  font-size: 18px;
+  color: rgb(1, 1, 77);
   transition: 0.3s;
 }
 
-.sidebar a:hover {
-  color: blue;
+.sidebar a i {
+  margin-right: 10px;
+  font-size: 24px;
+}
+
+.sidebar a span {
+  margin-left: 10px;
+  transition: opacity 0.5s;
 }
 
 .sidebar .active {
-  background-color: blue;
+  background-color: rgb(0, 0, 109);
   color: white;
   border-radius: 5px;
 }
@@ -53,4 +75,17 @@ body {
   flex-grow: 1;
   padding: 20px;
   background-color: #f0f0f0;
+}
+
+.closed .sidebar a span {
+  display: none;
+}
+
+.closed .sidebar {
+  width: 50px;
+  padding: 10px 0;
+}
+
+.closed .sidebar a i {
+  margin: 0 auto;
 }

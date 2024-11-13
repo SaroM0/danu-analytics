@@ -5,56 +5,69 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}Danu Analytics{% endblock %}</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
     <link rel="stylesheet" href="{% static 'css/styles.css' %}" />
   </head>
   <body>
     <div class="sidebar" id="sidebar">
+      <img
+        id="logo-toggle"
+        src="https://static.wixstatic.com/media/d34cc5_6396eedf64664d588f8e1e62035896af~mv2.png/v1/fill/w_1281,h_437,al_c/d34cc5_6396eedf64664d588f8e1e62035896af~mv2.png"
+        alt="Logo"
+        class="sidebar-logo"
+      />
       <a
         href="{% url 'home' %}"
         class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}"
-        >Home</a
       >
+        <i class="fas fa-home"></i><span>Home</span>
+      </a>
       <a
         href="{% url 'chatbot' %}"
         class="{% if request.resolver_match.url_name == 'chatbot' %}active{% endif %}"
-        >Chatbot</a
       >
+        <i class="fas fa-comments"></i><span>Chatbot</span>
+      </a>
       <a
         href="{% url 'map' %}"
         class="{% if request.resolver_match.url_name == 'map' %}active{% endif %}"
-        >Map</a
       >
+        <i class="fas fa-map"></i><span>Map</span>
+      </a>
       <a
         href="{% url 'predictions' %}"
         class="{% if request.resolver_match.url_name == 'predictions' %}active{% endif %}"
-        >Predictions</a
       >
+        <i class="fas fa-chart-line"></i><span>Predictions</span>
+      </a>
       <a
         href="{% url 'products' %}"
         class="{% if request.resolver_match.url_name == 'products' %}active{% endif %}"
-        >Products</a
       >
+        <i class="fas fa-box"></i><span>Products</span>
+      </a>
       <a
         href="{% url 'stores' %}"
         class="{% if request.resolver_match.url_name == 'stores' %}active{% endif %}"
-        >Stores</a
       >
-      <button onclick="toggleSidebar()">Toggle</button>
+        <i class="fas fa-store"></i><span>Stores</span>
+      </a>
     </div>
-    <div class="content">
-      {% block content %}
-      <!-- Page Content Here -->
-      {% endblock %}
-    </div>
+    <div class="content">{% block content %} {% endblock %}</div>
 
     <script>
+      document.getElementById("logo-toggle").onclick = toggleSidebar;
+
       function toggleSidebar() {
         var sidebar = document.getElementById("sidebar");
-        if (sidebar.style.width === "50px") {
-          sidebar.style.width = "200px";
-        } else {
-          sidebar.style.width = "50px";
-        }
+        document.body.classList.toggle("closed");
       }
     </script>
   </body>
