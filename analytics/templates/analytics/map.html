@@ -218,4 +218,77 @@
         }
     });
 </script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+    async function exportToPDF() {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF();
+
+        // Exportar primera gráfica
+        const chart1Canvas = await Plotly.toImage('chart1', { format: 'png', width: 700, height: 400 });
+        pdf.addImage(chart1Canvas, 'PNG', 10, 10, 180, 90);
+
+        // Exportar segunda gráfica
+        const chart2Canvas = await Plotly.toImage('chart2', { format: 'png', width: 700, height: 400 });
+        pdf.addPage();
+        pdf.addImage(chart2Canvas, 'PNG', 10, 10, 180, 90);
+
+        pdf.save('graficas.pdf');
+    }
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+    function exportToExcel() {
+        // Obtener datos de la gráfica de cantidad
+        const chart1Data = Plotly.d3.select('chart1').data()[0];
+        const chart2Data = Plotly.d3.select('chart2').data()[0];
+
+        const workbook = XLSX.utils.book_new();
+        
+        // Preparar datos para Excel
+        const chart1SheetData = [["Producto", "Cantidad"]];
+        chart1Data.x.forEach((name, i) => {
+            chart1SheetData.push([name, chart1Data.y[i]]);
+        });
+        const chart2SheetData = [["Producto", "Ingresos"]];
+        chart2Data.x.forEach((name, i) => {
+            chart2SheetData.push([name, chart2Data.y[i]]);
+        });
+
+        // Crear hojas para cada gráfica
+        const chart1Sheet = XLSX.utils.aoa_to_sheet(chart1SheetData);
+        const chart2Sheet = XLSX.utils.aoa_to_sheet(chart2SheetData);
+
+        XLSX.utils.book_append_sheet(workbook, chart1Sheet, "Cantidad Vendida");
+        XLSX.utils.book_append_sheet(workbook, chart2Sheet, "Ingresos");
+
+        XLSX.writeFile(workbook, 'graficas.xlsx');
+    }
+</script>
+
+<script>
+    function exportToCSV() {
+        const chart1Data = Plotly.d3.select('chart1').data()[0];
+        const chart2Data = Plotly.d3.select('chart2').data()[0];
+
+        // Exportar datos de chart1
+        const chart1SheetData = [["Producto", "Cantidad"]];
+        chart1Data.x.forEach((name, i) => {
+            chart1SheetData.push([name, chart1Data.y[i]]);
+        });
+        const chart1Sheet = XLSX.utils.aoa_to_sheet(chart1SheetData);
+        XLSX.writeFile({ Sheets: { 'Sheet1': chart1Sheet }, SheetNames: ['Sheet1'] }, 'cantidad.csv');
+
+        // Exportar datos de chart2
+        const chart2SheetData = [["Producto", "Ingresos"]];
+        chart2Data.x.forEach((name, i) => {
+            chart2SheetData.push([name, chart2Data.y[i]]);
+        });
+        const chart2Sheet = XLSX.utils.aoa_to_sheet(chart2SheetData);
+        XLSX.writeFile({ Sheets: { 'Sheet1': chart2Sheet }, SheetNames: ['Sheet1'] }, 'ingresos.csv');
+    }
+</script>
+
 {% endblock %}
