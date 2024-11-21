@@ -106,11 +106,9 @@ data['SalesDate'] = pd.to_datetime(data['SalesDate'], format='%m/%d/%Y', errors=
 def filter_data(request):
     if request.method == "POST":
         try:
-            # Parsear el cuerpo de la solicitud
             import json
             body = json.loads(request.body)
 
-            # Obtener los filtros
             tienda = body.get("tienda")
             fecha_inicio = pd.to_datetime(body.get("fecha_inicio"))
             fecha_fin = pd.to_datetime(body.get("fecha_fin"))
@@ -121,6 +119,8 @@ def filter_data(request):
                 (data['SalesDate'] >= fecha_inicio) &
                 (data['SalesDate'] <= fecha_fin)
             ]
+
+            print(filtered_data)  # Verificar qué datos se están filtrando
 
             if filtered_data.empty:
                 return JsonResponse({"error": "No hay datos para los filtros seleccionados."})
@@ -248,4 +248,12 @@ def products(request):
     return render(request, 'analytics/products.html')
 
 def stores(request):
-    return render(request, 'analytics/stores.html')
+    tiendas = data['Store'].dropna().unique().tolist()  # Asegúrate de que la columna existe y no tiene nulos
+    fecha_min = data['SalesDate'].min().strftime('%Y-%m-%d')  # Fecha mínima para el filtro
+    fecha_max = data['SalesDate'].max().strftime('%Y-%m-%d')  # Fecha máxima para el filtro
+
+    return render(request, 'analytics/stores.html', {
+        'tiendas': tiendas,
+        'fecha_min': fecha_min,
+        'fecha_max': fecha_max,
+    })
