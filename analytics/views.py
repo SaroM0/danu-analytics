@@ -89,7 +89,7 @@ def chatbot(request):
     return render(request, 'analytics/chatbot.html')
 
 def create_map():
-    m = folium.Map(location=[53.0, -1.5], zoom_start=6)
+    m = folium.Map(location=[53.0, -1.5], zoom_start=6, tiles="Cartodb Positron")
     for idx, row in df_cities.iterrows():
         city_name = row['City']
         lat, lon = row['Latitude'], row['Longitude']
@@ -101,11 +101,70 @@ def create_map():
         ).add_to(m)
     return m
 
+data['SalesDate'] = pd.to_datetime(data['SalesDate'], format='%m/%d/%Y', errors='coerce')
+
+def filter_data(request):
+    if request.method == "POST":
+        try:
+            # Parsear el cuerpo de la solicitud
+            import json
+            body = json.loads(request.body)
+
+            # Obtener los filtros
+            tienda = body.get("tienda")
+            fecha_inicio = pd.to_datetime(body.get("fecha_inicio"))
+            fecha_fin = pd.to_datetime(body.get("fecha_fin"))
+
+            # Filtrar los datos
+            filtered_data = data[
+                (data['Store'] == tienda) &
+                (data['SalesDate'] >= fecha_inicio) &
+                (data['SalesDate'] <= fecha_fin)
+            ]
+
+            if filtered_data.empty:
+                return JsonResponse({"error": "No hay datos para los filtros seleccionados."})
+
+            # Resumir ventas diarias
+            ventas_diarias = (
+                filtered_data.groupby('SalesDate')[['SalesDollars']].sum().reset_index()
+            )
+
+            # Preparar datos para la tabla
+            tabla = filtered_data[['Store', 'SalesQuantity', 'SalesDollars', 'SalesDate', 'Description']].to_dict(orient='records')
+
+            # Preparar datos para el gráfico
+            ventas_diarias_data = {
+                "SalesDate": ventas_diarias['SalesDate'].dt.strftime('%Y-%m-%d').tolist(),
+                "SalesDollars": ventas_diarias['SalesDollars'].tolist()
+            }
+
+            return JsonResponse({"tabla": tabla, "ventas_diarias": ventas_diarias_data})
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)})
+
+    return JsonResponse({"error": "Método no permitido"}, status=405)
+
+
+def get_global_data():
+    total_sales = data['SalesDollars'].sum()
+    num_stores = data['Store'].nunique()
+    types_of_alcohol = data['Brand'].nunique()
+    return {
+        "total_sales": total_sales,
+        "num_stores": num_stores,
+        "types_of_alcohol": types_of_alcohol
+    }
 
 def map(request):
     folium_map = create_map()
     map_html = folium_map._repr_html_()
     return render(request, 'analytics/map.html', {'map_html': map_html})
+
+def get_global_data_api(request):
+    global_data = get_global_data()
+    return JsonResponse(global_data)
 
 def get_city_data(request, city_name):
     # Filtra los datos para la ciudad seleccionada
@@ -127,7 +186,12 @@ def get_city_data(request, city_name):
             "top_products_income": {
                 "names": [],
                 "values": []
+            },
+            "monthly_sales": {
+                "months": [],
+                "sales": []
             }
+            
         })
 
     # Cálculos normales cuando hay datos
@@ -145,6 +209,14 @@ def get_city_data(request, city_name):
     top_products_income = city_data.groupby('Description').agg({
         'SalesDollars': 'sum'
     }).reset_index().nlargest(10, 'SalesDollars')
+    
+    city_data['SalesDate'] = pd.to_datetime(city_data['SalesDate'])
+    city_data['Month'] = city_data['SalesDate'].dt.month_name()
+    monthly_sales = city_data.groupby('Month')['SalesDollars'].sum().reset_index()
+    monthly_sales = monthly_sales.sort_values(by='Month', key=lambda x: pd.Categorical(x, categories=[
+        "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
+    ], ordered=True))
+
 
     response_data = {
         "total_sales": total_sales,
@@ -160,6 +232,10 @@ def get_city_data(request, city_name):
         "top_products_income": {
             "names": top_products_income['Description'].tolist(),
             "values": top_products_income['SalesDollars'].tolist()
+         },
+        "monthly_sales": {
+            "months": monthly_sales['Month'].tolist(),
+            "sales": monthly_sales['SalesDollars'].tolist()
         }
     }
 

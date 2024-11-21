@@ -1,5 +1,76 @@
 {% extends 'analytics/base.html' %} {% block title %} Chatbot {% endblock %}
 {%block content %}
-<h1>Chatbot Page</h1>
-<p>Welcome to the Chatbot page!</p>
-{% endblock %}
+<div class="chat-container">
+    <!-- Header -->
+    <div class="chat-header">
+      Chatbot
+    </div>
+  
+    <!-- Messages -->
+    <div class="chat-messages" id="chat-messages">
+      <div class="bot-message">¡Hola! ¿En qué puedo ayudarte?</div>
+    </div>
+  
+    <!-- Footer with input and send button -->
+    <div class="chat-footer">
+      <input type="text" id="chat-input" class="chat-input" placeholder="Escribe tu mensaje...">
+      <button class="send-button" onclick="sendMessage()">Enviar</button>
+    </div>
+  </div>
+  
+  <script>
+    // Configuración de la API
+    const API_URL = "https://stapi.straico.com/v0/agent/66dce5fb10da9efc3041d915/prompt";
+    const TOKEN = "dn-XniKcSjKqHn2E9cgyCf43Dcy3UtmB7hZpXjt4AAxbf7UbZZc";
+  
+    const chatMessages = document.getElementById("chat-messages");
+    const chatInput = document.getElementById("chat-input");
+  
+    // Función para enviar mensajes
+    async function sendMessage() {
+      const userMessage = chatInput.value.trim();
+      if (userMessage === "") return;
+  
+      // Agregar mensaje del usuario
+      appendMessage(userMessage, "user");
+      chatInput.value = "";
+  
+      // Llamar a la API
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ prompt: userMessage }),
+        });
+  
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            const botMessage = data.response.answer;
+            appendMessage(botMessage, "bot");
+          } else {
+            appendMessage("Lo siento, hubo un error procesando tu solicitud.", "bot");
+          }
+        } else {
+          appendMessage("Error al conectar con el servidor. Por favor, inténtalo de nuevo.", "bot");
+        }
+      } catch (error) {
+        appendMessage("Hubo un error de red. Verifica tu conexión a internet.", "bot");
+      }
+    }
+  
+    // Función para agregar mensajes al chat
+    function appendMessage(message, role) {
+      const messageElement = document.createElement("div");
+      messageElement.className = role === "user" ? "user-message" : "bot-message";
+      messageElement.textContent = message;
+      chatMessages.appendChild(messageElement);
+  
+      // Hacer scroll al final
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+  </script>
+  {% endblock %}
