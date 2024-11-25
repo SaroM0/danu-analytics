@@ -3,9 +3,23 @@ import pandas as pd
 import folium
 import plotly.graph_objects as go
 from django.http import JsonResponse
+import json
+from django.views.decorators.csrf import csrf_exempt
+
 
 file_path = 'data/df_ventas_concat.csv'
-data = pd.read_csv(file_path)
+
+def cargar_datos(filepath):
+    try:
+        df = pd.read_csv(filepath)
+        df['SalesDate'] = pd.to_datetime(df['SalesDate'], format='%m/%d/%Y', errors='coerce')
+        df['Store'] = df['Store'].astype(str)  # Convertir Store a cadena
+        return df
+    except FileNotFoundError:
+        return pd.DataFrame()
+
+data = cargar_datos(file_path) 
+
 
 city_coordinates = {
     'HARDERSFIELD': [53.6458, -1.7780],
@@ -103,37 +117,39 @@ def create_map():
 
 data['SalesDate'] = pd.to_datetime(data['SalesDate'], format='%m/%d/%Y', errors='coerce')
 
+@csrf_exempt
 def filter_data(request):
     if request.method == "POST":
         try:
-            import json
+            # Leer datos del cuerpo de la solicitud
             body = json.loads(request.body)
+            tienda = str(body.get("tienda"))  # Convertir tienda a cadena
+            fecha_inicio = pd.to_datetime(body.get("fecha_inicio"), errors='coerce')
+            fecha_fin = pd.to_datetime(body.get("fecha_fin"), errors='coerce')
 
-            tienda = body.get("tienda")
-            fecha_inicio = pd.to_datetime(body.get("fecha_inicio"))
-            fecha_fin = pd.to_datetime(body.get("fecha_fin"))
+            # Validar fechas
+            if pd.isnull(fecha_inicio) or pd.isnull(fecha_fin):
+                return JsonResponse({"error": "Fechas inválidas."})
 
-            # Filtrar los datos
-            filtered_data = data[
+            # Aplicar filtros
+            data_filtrada = data[
                 (data['Store'] == tienda) &
                 (data['SalesDate'] >= fecha_inicio) &
                 (data['SalesDate'] <= fecha_fin)
             ]
 
-            print(filtered_data)  # Verificar qué datos se están filtrando
+            # Depuración: Verificar datos filtrados
+            print(f"Datos filtrados para la tienda {tienda} en el rango {fecha_inicio} - {fecha_fin}:")
+            print(data_filtrada)
 
-            if filtered_data.empty:
+            if data_filtrada.empty:
                 return JsonResponse({"error": "No hay datos para los filtros seleccionados."})
 
-            # Resumir ventas diarias
-            ventas_diarias = (
-                filtered_data.groupby('SalesDate')[['SalesDollars']].sum().reset_index()
-            )
-
             # Preparar datos para la tabla
-            tabla = filtered_data[['Store', 'SalesQuantity', 'SalesDollars', 'SalesDate', 'Description']].to_dict(orient='records')
+            tabla = data_filtrada[['Store', 'SalesQuantity', 'SalesDollars', 'SalesDate', 'Description']].to_dict(orient='records')
 
-            # Preparar datos para el gráfico
+            # Preparar datos para la gráfica
+            ventas_diarias = data_filtrada.groupby('SalesDate')[['SalesDollars']].sum().reset_index()
             ventas_diarias_data = {
                 "SalesDate": ventas_diarias['SalesDate'].dt.strftime('%Y-%m-%d').tolist(),
                 "SalesDollars": ventas_diarias['SalesDollars'].tolist()
@@ -142,9 +158,11 @@ def filter_data(request):
             return JsonResponse({"tabla": tabla, "ventas_diarias": ventas_diarias_data})
 
         except Exception as e:
+            print(f"Error en el procesamiento: {str(e)}")
             return JsonResponse({"error": str(e)})
 
     return JsonResponse({"error": "Método no permitido"}, status=405)
+
 
 
 def get_global_data():
@@ -241,19 +259,92 @@ def get_city_data(request, city_name):
 
     return JsonResponse(response_data)
 
+
+
+@csrf_exempt
+def filter_product_weekday_sales(request):
+    if request.method == "POST":
+        try:
+            body = json.loads(request.body)
+            producto = body.get("producto")
+            fecha_inicio = pd.to_datetime(body.get("fecha_inicio"), errors='coerce')
+            fecha_fin = pd.to_datetime(body.get("fecha_fin"), errors='coerce')
+
+            if pd.isnull(fecha_inicio) or pd.isnull(fecha_fin):
+                return JsonResponse({"error": "Fechas inválidas."})
+
+            # Filtrar datos
+            data_filtrada = data[
+                (data['Description'] == producto) &
+                (data['SalesDate'] >= fecha_inicio) &
+                (data['SalesDate'] <= fecha_fin)
+            ]
+
+            if data_filtrada.empty:
+                return JsonResponse({"error": "No hay datos para los filtros seleccionados."})
+
+            # Preparar datos para la tabla
+            tabla = data_filtrada[['Description', 'SalesQuantity', 'SalesDollars', 'SalesDate', 'Store']].to_dict(orient='records')
+
+            # Crear columna para días de la semana
+            dias_semana_map = {
+                0: "Lunes",
+                1: "Martes",
+                2: "Miércoles",
+                3: "Jueves",
+                4: "Viernes",
+                5: "Sábado",
+                6: "Domingo"
+            }
+            data_filtrada['DiaSemana'] = data_filtrada['SalesDate'].dt.weekday.map(dias_semana_map)
+
+            # Calcular promedio de ventas por día de la semana
+            promedio_dias = (
+                data_filtrada.groupby('DiaSemana')[['SalesDollars']].mean()
+                .reindex(["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"])  # Ordenar días
+                .reset_index()
+            )
+            promedio_dias.rename(columns={'SalesDollars': 'PromedioVentas'}, inplace=True)
+
+            # Preparar datos para la gráfica
+            ventas_dias_data = {
+                "DiasSemana": promedio_dias['DiaSemana'].tolist(),
+                "PromedioVentas": promedio_dias['PromedioVentas'].tolist()
+            }
+
+            return JsonResponse({"tabla": tabla, "ventas_semana": ventas_dias_data})
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)})
+
+    return JsonResponse({"error": "Método no permitido"}, status=405)
+
+
 def predictions(request):
-    return render(request, 'analytics/predictions.html')
+    image_indices = range(1, 6)
+    return render(request, 'analytics/predictions.html', {'image_indices': image_indices})
 
 def products(request):
-    return render(request, 'analytics/products.html')
+    if request.method == "GET":
+        productos = data['Description'].dropna().unique().tolist()
+        fecha_min = data['SalesDate'].min().strftime('%Y-%m-%d')
+        fecha_max = data['SalesDate'].max().strftime('%Y-%m-%d')
+
+        return render(request, 'analytics/products.html', {
+            'productos': productos,
+            'fecha_min': fecha_min,
+            'fecha_max': fecha_max
+        })
+
 
 def stores(request):
-    tiendas = data['Store'].dropna().unique().tolist()  # Asegúrate de que la columna existe y no tiene nulos
-    fecha_min = data['SalesDate'].min().strftime('%Y-%m-%d')  # Fecha mínima para el filtro
-    fecha_max = data['SalesDate'].max().strftime('%Y-%m-%d')  # Fecha máxima para el filtro
+    if request.method == "GET":
+        tiendas = data['Store'].dropna().unique().tolist()
+        fecha_min = data['SalesDate'].min().strftime('%Y-%m-%d')
+        fecha_max = data['SalesDate'].max().strftime('%Y-%m-%d')
 
-    return render(request, 'analytics/stores.html', {
-        'tiendas': tiendas,
-        'fecha_min': fecha_min,
-        'fecha_max': fecha_max,
-    })
+        return render(request, 'analytics/stores.html', {
+            'tiendas': tiendas,
+            'fecha_min': fecha_min,
+            'fecha_max': fecha_max
+        })

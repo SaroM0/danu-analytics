@@ -385,3 +385,50 @@ h4 {
   text-align: left; /* Alinea el texto hacia la izquierda */
   color: #326092; /* Color del texto */
 }
+
+.table-container {
+  max-height: 400px; /* Altura máxima de la tabla */
+  overflow-y: auto; /* Desplazamiento vertical */
+  border: 1px solid #ccc; /* Borde alrededor de la tabla */
+  margin-top: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  background-color: #f4f4f4;
+  font-weight: bold;
+}
+
+tbody tr:nth-child(odd) {
+  background-color: #f9f9f9;
+}
+
+tbody tr:hover {
+  background-color: #f1f1f1;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* Dos columnas */
+  gap: 10px; /* Espaciado entre las imágenes */
+  margin: 20px auto;
+  max-width: 80%; /* Ajusta el ancho máximo de la cuadrícula */
+}
+
+.grid-item img {
+  width: 90%; /* Asegura que las imágenes se ajusten al ancho del contenedor */
+  height: auto;
+  border-radius: 10px; /* Opcional: bordes redondeados */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Opcional: sombra para las imágenes */
+}

@@ -4,39 +4,49 @@
 <h1>Stores Page</h1>
 
 <!-- Filtros -->
-<div class="filters">
-    <label for="store-select">Selecciona una tienda:</label>
-    <select id="store-select">
-        <option value="" disabled selected>Selecciona una tienda</option>
-        {% for tienda in tiendas %}
-        <option value="{{ tienda }}">{{ tienda }}</option>
-        {% endfor %}
-    </select>
-
-    <label for="start-date">Fecha de inicio:</label>
-    <input type="date" id="start-date" value="{{ fecha_min }}" min="{{ fecha_min }}" max="{{ fecha_max }}">
-
-    <label for="end-date">Fecha de fin:</label>
-    <input type="date" id="end-date" value="{{ fecha_max }}" min="{{ fecha_min }}" max="{{ fecha_max }}">
-    
-    <button id="filter-btn">Filtrar</button>
+<input type="hidden" id="csrf-token" value="{% csrf_token %}">
+<div class="filters-container-horizontal">
+    <div class="filters-row">
+        <div class="filter-box">
+            <label for="store-select">Selecciona una tienda:</label>
+            <select id="store-select" class="filter-input">
+                <option value="" disabled selected>Selecciona una tienda</option>
+                {% for tienda in tiendas %}
+                <option value="{{ tienda }}">{{ tienda }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-box">
+            <label for="start-date">Fecha de inicio:</label>
+            <input type="date" id="start-date" class="filter-input" value="{{ fecha_min }}" min="{{ fecha_min }}" max="{{ fecha_max }}">
+        </div>
+        <div class="filter-box">
+            <label for="end-date">Fecha de fin:</label>
+            <input type="date" id="end-date" class="filter-input" value="{{ fecha_max }}" min="{{ fecha_min }}" max="{{ fecha_max }}">
+        </div>
+        <div>
+            <button id="filter-btn" class="filter-button">Filtrar</button>
+        </div>
+    </div>
 </div>
 
-<!-- Tabla de datos -->
+<!-- Tabla con scroll -->
 <div id="data-table">
     <h2>Datos Filtrados</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Tienda</th>
-                <th>Cantidad</th>
-                <th>Ventas (£)</th>
-                <th>Fecha</th>
-                <th>Descripción</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Tienda</th>
+                    <th>Cantidad</th>
+                    <th>Ventas (£)</th>
+                    <th>Fecha</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
 </div>
 
 <!-- Gráfica -->
@@ -49,85 +59,181 @@
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        // Agregar evento al botón de filtrar
         document.getElementById("filter-btn").addEventListener("click", function () {
-            // Obtener valores de los filtros
             const store = document.getElementById("store-select").value;
             const startDate = document.getElementById("start-date").value;
             const endDate = document.getElementById("end-date").value;
-
-            // Validar los filtros
-            if (!store) {
-                alert("Por favor, selecciona una tienda.");
+            const csrfToken = document.getElementById('csrf-token').value;
+    
+            if (!store || !startDate || !endDate || new Date(startDate) > new Date(endDate)) {
+                alert("Por favor, selecciona filtros válidos.");
                 return;
             }
-            if (!startDate || !endDate) {
-                alert("Por favor, selecciona un rango de fechas válido.");
-                return;
-            }
-            if (new Date(startDate) > new Date(endDate)) {
-                alert("La fecha de inicio no puede ser mayor que la fecha de fin.");
-                return;
-            }
-
-            // Realizar la solicitud a la API
+    
             fetch("/filter-data", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
                 },
-                body: JSON.stringify({ tienda: store, fecha_inicio: startDate, fecha_fin: endDate }),
+                body: JSON.stringify({ tienda: store, fecha_inicio: startDate, fecha_fin: endDate })
             })
-                .then((response) => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then((data) => {
-                    // Manejar errores del backend
+                .then(response => response.json())
+                .then(data => {
                     if (data.error) {
                         alert(data.error);
                         return;
                     }
-
-                    // Actualizar la tabla con los datos filtrados
+    
                     const tbody = document.querySelector("#data-table tbody");
-                    tbody.innerHTML = ""; // Limpia la tabla antes de agregar nuevos datos
-                    data.tabla.forEach((row) => {
-                        const tr = document.createElement("tr");
-                        tr.innerHTML = `
+                    tbody.innerHTML = data.tabla.map(row => `
+                        <tr>
                             <td>${row.Store}</td>
                             <td>${row.SalesQuantity}</td>
                             <td>£${parseFloat(row.SalesDollars).toFixed(2)}</td>
                             <td>${row.SalesDate}</td>
                             <td>${row.Description}</td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-
-                    // Actualizar la gráfica con las tendencias de ventas
-                    const ventasDiarias = data.ventas_diarias;
+                        </tr>
+                    `).join('');
+    
                     const trace = {
-                        x: ventasDiarias.SalesDate, // Fechas en el eje X
-                        y: ventasDiarias.SalesDollars, // Ventas en el eje Y
-                        type: "scatter",
-                        mode: "lines+markers",
-                        line: { color: "#183b61" },
+                        x: data.ventas_diarias.SalesDate,
+                        y: data.ventas_diarias.SalesDollars,
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        line: { color: '#183b61' }
                     };
+    
                     const layout = {
                         title: "Tendencias de Ventas por Fecha",
                         xaxis: { title: "Fecha" },
-                        yaxis: { title: "Ventas (£)" },
+                        yaxis: { title: "Ventas (£)" }
                     };
+    
                     Plotly.newPlot("chart", [trace], layout);
                 })
-                .catch((error) => {
-                    console.error("Error al filtrar datos:", error);
-                    alert("Ocurrió un error al filtrar los datos. Intenta nuevamente.");
-                });
+                .catch(error => console.error("Error:", error));
         });
     });
 </script>
+
+<!-- Estilo para la tabla -->
+<style>
+    .table-container {
+        max-height: 400px; /* Altura máxima de la tabla */
+        overflow-y: auto; /* Desplazamiento vertical */
+        border: 1px solid #ccc; /* Borde alrededor de la tabla */
+        margin-top: 10px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+
+    th {
+        background-color: #f4f4f4;
+        font-weight: bold;
+    }
+
+    tbody tr:nth-child(odd) {
+        background-color: #f9f9f9;
+    }
+
+    tbody tr:hover {
+        background-color: #f1f1f1;
+    }
+    .filters-container-horizontal {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: #fbfefa;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        max-width: 100%;
+        margin-top: -30px
+    }
+
+    .filter-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #040959;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .filters-row {
+        display: flex;
+        gap: 20px; /* Espacio entre los filtros */
+        align-items: flex-end;
+        justify-content: center;
+        width: 100%;
+        flex-wrap: wrap; /* Para adaptarse a pantallas más pequeñas */
+    }
+
+    .filter-box {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .filter-box label {
+        font-size: 1rem;
+        color: #040959;
+        margin-bottom: 5px;
+    }
+
+    .filter-input {
+        padding: 10px;
+        font-size: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+        outline: none;
+        transition: border-color 0.3s;
+    }
+
+    .filter-input:focus {
+        border-color: #040959;
+    }
+
+    .filter-button {
+        padding: 10px 20px;
+        font-size: 1rem;
+        color: #fbfefa;
+        background-color: #040959;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    .filter-button:hover {
+        background-color: #326092;
+    }
+
+    @media (max-width: 768px) {
+        .filters-row {
+            flex-direction: column; /* Cambia a vertical en pantallas pequeñas */
+            align-items: center;
+        }
+
+        .filter-box {
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .filter-button {
+            width: 100%;
+        }
+    }
+</style>
 
 {% endblock %}

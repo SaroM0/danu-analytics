@@ -1,4 +1,238 @@
-{% extends 'analytics/base.html' %} {% block title %} Products {% endblock %} {%block content %}
-<h1>Chatbot Page</h1>
-<p>Welcome to the Chatbot page!</p>
+{% extends 'analytics/base.html' %}
+{% block title %}Productos{% endblock %}
+{% block content %}
+<h1>Promedio de Ventas por Día de la Semana</h1>
+
+<!-- Filtros -->
+<div class="filters-container-horizontal">
+    <div class="filters-row">
+        <div class="filter-box">
+            <label for="product-select">Selecciona un producto:</label>
+            <select id="product-select" class="filter-input">
+                <option value="" disabled selected>Selecciona un producto</option>
+                {% for producto in productos %}
+                <option value="{{ producto }}">{{ producto }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-box">
+            <label for="start-date">Fecha de inicio:</label>
+            <input type="date" id="start-date" class="filter-input" value="{{ fecha_min }}" min="{{ fecha_min }}" max="{{ fecha_max }}">
+        </div>
+        <div class="filter-box">
+            <label for="end-date">Fecha de fin:</label>
+            <input type="date" id="end-date" class="filter-input" value="{{ fecha_max }}" min="{{ fecha_min }}" max="{{ fecha_max }}">
+        </div>
+        <button id="filter-btn" class="filter-button">Filtrar</button>
+    </div>
+</div>
+
+<!-- Tabla -->
+<div class="table-container">
+<div id="data-table">
+    <h2>Productos Filtrados</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Ventas ($)</th>
+                <th>Fecha</th>
+                <th>Tienda</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+</div>
+
+<!-- Gráfica -->
+<div id="sales-weekday-chart">
+    <h2>Promedio de Ventas por Día de la Semana</h2>
+    <div id="chart"></div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById("filter-btn").addEventListener("click", function () {
+            const product = document.getElementById("product-select").value;
+            const startDate = document.getElementById("start-date").value;
+            const endDate = document.getElementById("end-date").value;
+
+            if (!product || !startDate || !endDate) {
+                alert("Por favor, selecciona un producto y un rango de fechas válido.");
+                return;
+            }
+
+            fetch("/filter-product-weekday-sales", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ producto: product, fecha_inicio: startDate, fecha_fin: endDate })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+
+                    // Actualizar tabla
+                    const tbody = document.querySelector("#data-table tbody");
+                    tbody.innerHTML = data.tabla.map(row => `
+                        <tr>
+                            <td>${row.Description}</td>
+                            <td>${row.SalesQuantity}</td>
+                            <td>${row.SalesDollars}</td>
+                            <td>${row.SalesDate}</td>
+                            <td>${row.Store}</td>
+                        </tr>
+                    `).join('');
+
+                    // Actualizar gráfica
+                    const trace = {
+                        x: data.ventas_semana.DiasSemana,
+                        y: data.ventas_semana.PromedioVentas,
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        fill: 'tozeroy',
+                        line: { color: '#183b61' }
+                    };
+
+                    const layout = {
+                        title: "Promedio de Ventas por Día de la Semana",
+                        xaxis: { title: "Días de la Semana" },
+                        yaxis: { title: "Promedio de Ventas ($)" }
+                    };
+
+                    Plotly.newPlot("chart", [trace], layout);
+                })
+                .catch(error => console.error("Error:", error));
+        });
+    });
+</script>
+
+<!-- Estilo para la tabla -->
+<style>
+    .table-container {
+        max-height: 400px; /* Altura máxima de la tabla */
+        overflow-y: auto; /* Desplazamiento vertical */
+        border: 1px solid #ccc; /* Borde alrededor de la tabla */
+        margin-top: 10px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+
+    th {
+        background-color: #f4f4f4;
+        font-weight: bold;
+    }
+
+    tbody tr:nth-child(odd) {
+        background-color: #f9f9f9;
+    }
+
+    tbody tr:hover {
+        background-color: #f1f1f1;
+    }
+
+    .filters-container-horizontal {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        background-color: #fbfefa;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        max-width: 100%;
+        margin: 20px auto;
+    }
+
+    .filter-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #040959;
+        text-align: center;
+    }
+
+    .filters-row {
+        display: flex;
+        gap: 20px; /* Espacio entre filtros */
+        align-items: flex-end;
+        justify-content: center;
+        flex-wrap: wrap; /* Adaptabilidad para pantallas pequeñas */
+        width: 100%;
+    }
+
+    .filter-box {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .filter-box label {
+        font-size: 1rem;
+        color: #040959;
+        margin-bottom: 5px;
+    }
+
+    .filter-input {
+        padding: 10px;
+        font-size: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+        outline: none;
+        transition: border-color 0.3s;
+    }
+
+    .filter-input:focus {
+        border-color: #040959;
+    }
+
+    .filter-button {
+        padding: 10px 20px;
+        font-size: 1rem;
+        color: #fbfefa;
+        background-color: #040959;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    .filter-button:hover {
+        background-color: #326092;
+    }
+
+    /* Responsividad */
+    @media (max-width: 768px) {
+        .filters-row {
+            flex-direction: column; /* Cambia a vertical en pantallas pequeñas */
+            align-items: center;
+        }
+
+        .filter-box {
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .filter-button {
+            width: 100%;
+        }
+    }
+</style>
+
 {% endblock %}

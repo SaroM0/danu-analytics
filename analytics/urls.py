@@ -11,5 +11,5 @@ urlpatterns = [
     path('get-city-data/<str:city_name>/', views.get_city_data, name='get_city_data'),
     path('get-global-data/', views.get_global_data_api, name='get_global_data'),
     path('filter-data', views.filter_data, name='filter_data'),
-
-]
+    path('filter-product-weekday-sales', views.filter_product_weekday_sales, name='filter_product_weekday_sales'),
+]   
