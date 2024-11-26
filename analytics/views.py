@@ -6,21 +6,26 @@ from django.http import JsonResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
 
-
+# Archivo de datos inicial para cargar información
 file_path = 'data/df_ventas_concat.csv'
 
+# Función para cargar datos desde un archivo CSV
 def cargar_datos(filepath):
     try:
+        # Leer el archivo CSV y procesar columnas relevantes
         df = pd.read_csv(filepath)
         df['SalesDate'] = pd.to_datetime(df['SalesDate'], format='%m/%d/%Y', errors='coerce')
-        df['Store'] = df['Store'].astype(str)  # Convertir Store a cadena
+        df['Store'] = df['Store'].astype(str)  # Asegurarse de que la columna 'Store' sea de tipo cadena
         return df
     except FileNotFoundError:
+        # Manejo de errores si el archivo no existe
         return pd.DataFrame()
 
+# Carga de los datos al iniciar el servidor
 data = cargar_datos(file_path) 
 
 
+# Diccionario de coordenadas para las ciudades
 city_coordinates = {
     'HARDERSFIELD': [53.6458, -1.7780],
     'ASHBORNE': [53.0167, -1.7333],
@@ -91,23 +96,28 @@ city_coordinates = {
     'PAENTMARWY': [53.0000, -3.0000],
 }
 
+# Creación de un DataFrame con las coordenadas de las ciudades
 df_cities = pd.DataFrame([
     {'City': city, 'Latitude': coords[0], 'Longitude': coords[1]}
     for city, coords in city_coordinates.items()
 ])
 
+# Vista principal para cargar la página inicial
 def home(request):
     return render(request, 'analytics/home.html')
 
+# Vista secundaria para la página del chatbot
 def chatbot(request):
     return render(request, 'analytics/chatbot.html')
 
+# Función para generar un mapa interactivo utilizando Folium
 def create_map():
     m = folium.Map(location=[53.0, -1.5], zoom_start=6, tiles="Cartodb Positron")
     for idx, row in df_cities.iterrows():
         city_name = row['City']
         lat, lon = row['Latitude'], row['Longitude']
         
+        # Añadir un marcador para cada ciudad
         folium.Marker(
             location=[lat, lon],
             popup=f'<b>{city_name}</b>',  # Aseguramos que el popup tenga solo el nombre
@@ -115,13 +125,12 @@ def create_map():
         ).add_to(m)
     return m
 
-data['SalesDate'] = pd.to_datetime(data['SalesDate'], format='%m/%d/%Y', errors='coerce')
-
+# Vista API para filtrar datos por tienda y rango de fechas
 @csrf_exempt
 def filter_data(request):
     if request.method == "POST":
         try:
-            # Leer datos del cuerpo de la solicitud
+           # Parsear datos del cuerpo de la solicitud
             body = json.loads(request.body)
             tienda = str(body.get("tienda"))  # Convertir tienda a cadena
             fecha_inicio = pd.to_datetime(body.get("fecha_inicio"), errors='coerce')
@@ -131,24 +140,20 @@ def filter_data(request):
             if pd.isnull(fecha_inicio) or pd.isnull(fecha_fin):
                 return JsonResponse({"error": "Fechas inválidas."})
 
-            # Aplicar filtros
+            # Filtrar datos según los criterios especificados
             data_filtrada = data[
                 (data['Store'] == tienda) &
                 (data['SalesDate'] >= fecha_inicio) &
                 (data['SalesDate'] <= fecha_fin)
             ]
 
-            # Depuración: Verificar datos filtrados
-            print(f"Datos filtrados para la tienda {tienda} en el rango {fecha_inicio} - {fecha_fin}:")
-            print(data_filtrada)
-
             if data_filtrada.empty:
                 return JsonResponse({"error": "No hay datos para los filtros seleccionados."})
+            
+            data_filtrada.fillna("", inplace=True)
 
-            # Preparar datos para la tabla
-            tabla = data_filtrada[['Store', 'SalesQuantity', 'SalesDollars', 'SalesDate', 'Description']].to_dict(orient='records')
-
-            # Preparar datos para la gráfica
+            # Preparar datos para la tabla y la gráfica
+            tabla = data_filtrada[['Store', 'City_x', 'SalesQuantity', 'SalesDollars', 'SalesDate', 'Description']].to_dict(orient='records')
             ventas_diarias = data_filtrada.groupby('SalesDate')[['SalesDollars']].sum().reset_index()
             ventas_diarias_data = {
                 "SalesDate": ventas_diarias['SalesDate'].dt.strftime('%Y-%m-%d').tolist(),
@@ -324,25 +329,32 @@ def predictions(request):
     image_indices = range(1, 6)
     return render(request, 'analytics/predictions.html', {'image_indices': image_indices})
 
+# Vista para obtener y mostrar información sobre los productos disponibles
 def products(request):
     if request.method == "GET":
+        # Obtiene la lista de productos únicos, omitiendo valores nulos
         productos = data['Description'].dropna().unique().tolist()
+        # Calcula la fecha mínima y máxima en los datos, formateándolas como 'YYYY-MM-DD'
         fecha_min = data['SalesDate'].min().strftime('%Y-%m-%d')
         fecha_max = data['SalesDate'].max().strftime('%Y-%m-%d')
 
+        # Renderiza la plantilla 'products.html', pasando los datos procesados
         return render(request, 'analytics/products.html', {
             'productos': productos,
             'fecha_min': fecha_min,
             'fecha_max': fecha_max
         })
 
-
+# Vista para obtener y mostrar información sobre las tiendas disponibles
 def stores(request):
     if request.method == "GET":
+        # Obtiene la lista de tiendas únicas, omitiendo valores nulos
         tiendas = data['Store'].dropna().unique().tolist()
+         # Calcula la fecha mínima y máxima en los datos, formateándolas como 'YYYY-MM-DD'
         fecha_min = data['SalesDate'].min().strftime('%Y-%m-%d')
         fecha_max = data['SalesDate'].max().strftime('%Y-%m-%d')
 
+        # Renderiza la plantilla 'stores.html', pasando los datos procesados
         return render(request, 'analytics/stores.html', {
             'tiendas': tiendas,
             'fecha_min': fecha_min,

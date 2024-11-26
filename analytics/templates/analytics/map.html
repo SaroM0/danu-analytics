@@ -86,15 +86,19 @@
                     textinfo: "label+value",
                     textfont: { size: 12 },
                     marker: {
-                        colors: ['#3b1ee0', '#2c16c7', '#1e0faf', '#0f0796', '#00007e', '#00006d', '#00005c', '#00004b', '#00003a', '#000029']
+                        colors: ['#040959', '#223E77', '#406396', '#5D89B4', '#7BAECF', '#94C0D9', '#ADD3E3', '#C6E5ED', '#E0F2F7', '#D6E6F2']
+
                     }
                 }
             ];
 
             const treemapLayout = {
-                width: undefined,
-                height: 400,
-                automargin: false
+                width: 800, // Ancho deseado
+                height: 600, // Alto deseado
+                automargin: false,
+                font: {
+                    size: 22 // Tamaño de la fuente global para los textos
+                }
             };
             
         
@@ -109,7 +113,8 @@
                     hoverinfo: "label+value+percent",
                     textfont: { size: 12 },
                     marker: {
-                        colors: ['#3b1ee0', '#2c16c7', '#1e0faf', '#0f0796', '#00007e', '#00006d', '#00005c', '#00004b', '#00003a', '#000029']
+                        colors: ['#040959', '#223E77', '#406396', '#5D89B4', '#7BAECF', '#94C0D9', '#ADD3E3', '#C6E5ED', '#E0F2F7', '#D6E6F2']
+
                     }
                 }
             ];
@@ -261,7 +266,8 @@
                     textinfo: "label+value",
                     textfont: { size: 12 },
                     marker: {
-                        colors: ['#3b1ee0', '#2c16c7', '#1e0faf', '#0f0796', '#00007e', '#00006d', '#00005c', '#00004b', '#00003a', '#000029']
+                        colors: ['#040959', '#223E77', '#406396', '#5D89B4', '#7BAECF', '#94C0D9', '#ADD3E3', '#C6E5ED', '#E0F2F7', '#D6E6F2']
+
                     }
                 }
             ];
@@ -279,7 +285,8 @@
                     hoverinfo: "label+value+percent",
                     textfont: { size: 12 },
                     marker: {
-                        colors: ['#3b1ee0', '#2c16c7', '#1e0faf', '#0f0796', '#00007e', '#00006d', '#00005c', '#00004b', '#00003a', '#000029']
+                        colors: ['#040959', '#223E77', '#406396', '#5D89B4', '#7BAECF', '#94C0D9', '#ADD3E3', '#C6E5ED', '#E0F2F7', '#D6E6F2']
+
                     }
                 }
             ];
@@ -295,7 +302,7 @@
         boxpoints: "all", // Muestra todos los puntos dentro del boxplot
         jitter: 0.3, // Añade un poco de separación entre los puntos
         pointpos: 0, // Ajusta la posición de los puntos
-        marker: { color: "#3b1ee0" },
+        marker: { color: "#040959" },
     }
 ];
 
