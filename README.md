@@ -1,66 +1,123 @@
-# Proyecto Django: Danu
+# Danu Project
 
-Este es un proyecto Django enfocado en la visualización de datos y el análisis de ubicaciones usando mapas interactivos y gráficos. Contiene una aplicación principal llamada `danu` y una subaplicación llamada `analytics` que gestiona las vistas y la lógica de análisis.
+## Overview
 
-## Estructura del Proyecto
+Danu is a Django-based web application for sales data analysis. It provides various tools for filtering, visualizing, and summarizing sales information using interactive maps and charts.
 
-- **danu/**
-  - `settings.py`: Configuración principal de Django.
-  - `urls.py`: Enrutamiento principal que incluye las URLs de la aplicación `analytics`.
-  - `wsgi.py` y `asgi.py`: Archivos de configuración para despliegues en servidores compatibles con WSGI/ASGI.
-  - `db.sqlite3`: Base de datos SQLite predeterminada.
+### Key Features
 
-- **analytics/**: Aplicación que gestiona las vistas para la visualización de datos.
-  - `views.py`: Contiene la lógica para procesar los datos y renderizar vistas.
-  - `models.py`: (Vacío) Puede usarse en el futuro para definir modelos de Django.
-  - `templates/analytics/`: Carpeta que contiene los templates HTML para las diferentes visualizaciones (`home`, `chatbot`, `map`, `predictions`, `products`, `stores`).
+- Interactive map visualization of sales data using **Folium**.
+- Advanced filtering options for products, stores, and sales data.
+- API endpoints for accessing filtered and summarized data.
+- Dynamic charts with **Plotly** for detailed sales insights.
 
-- **data/**: Carpeta que contiene archivos CSV con datos para análisis y visualización.
+---
 
-- **static/**: Contiene archivos estáticos, como `styles.css` para los estilos del frontend.
+## Project Structure
 
-## Dependencias
-
-Este proyecto depende de las siguientes bibliotecas:
-- **Django 4.2.16**: Framework principal para construir aplicaciones web.
-- **Pandas**: Para la manipulación y análisis de datos.
-- **Folium**: Para la creación de mapas interactivos.
-- **Plotly**: Para gráficos interactivos.
-
-> Para instalar todas las dependencias, asegúrate de tener `pip` y Python instalados y ejecuta los siguientes comandos en tu entorno virtual.
-
-```bash
-pip install django==4.2.16 pandas folium plotly
+```
+danu/
+├── analytics/        # Main Django app
+│   ├── migrations/   # Database migration files
+│   ├── static/       # Static assets (CSS, JS, images)
+│   ├── templates/    # HTML templates
+│   ├── views.py      # Core logic for views
+│   └── ...           # Other files (models.py, forms.py, etc.)
+├── data/             # CSV and data files for the application
+├── db.sqlite3        # SQLite database
+├── manage.py         # Django's management script
+├── requiremetns.txt  # Python dependencies
+├── static/           # Project-wide static files
+└── README.md         # Documentation file
 ```
 
-## Instalación y Configuración
-1. **Clona el repositorio**:
+---
+
+## Setup Instructions
+
+### Prerequisites
+
+- Python 3.8 or higher
+- `pip` (Python package installer)
+
+### Installation
+
+1. Clone the repository:
+
    ```bash
-   git clone <URL-del-repositorio>
+   git clone <repository-url>
    cd danu
    ```
-2. **Instala las dependencias**:
+
+2. Create and activate a virtual environment:
+
    ```bash
-   pip install -r requirements.txt
+   python -m venv venv
+   source venv/bin/activate  # For Linux/MacOS
+   venv\Scripts\activate   # For Windows
    ```
-3. **Configura la Base de Datos**: Ejecuta las migraciones de Django para preparar la base de datos:
+
+3. Install dependencies:
+
+   ```bash
+   pip install -r requiremetns.txt
+   ```
+
+4. Apply migrations:
+
    ```bash
    python manage.py migrate
    ```
-4. **Carga los datos:**: Los datos en formato CSV deben estar en la carpeta `data/` para su análisis.
-5. **Ejecuta el servidor**: Inicia el servidor local de Django:
-    ```bash
+
+5. Load initial data (if required):
+
+   ```bash
+   python manage.py loaddata initial_data.json
+   ```
+
+6. Run the development server:
+   ```bash
    python manage.py runserver
    ```
-    Accede a la aplicación en `http://127.0.0.1:8000/`.
 
-## Uso de la Aplicación
+### Access the Application
 
-La aplicación ofrece varias vistas para la visualización de datos:
+Open your browser and go to: `http://127.0.0.1:8000`
 
-- **Home** (`/`): Página de inicio con enlaces a otras visualizaciones.
-- **Chatbot** (`/chatbot`): (Especifique la funcionalidad).
-- **Mapa** (`/map`): Visualización de datos en un mapa interactivo.
-- **Predicciones** (`/predictions`): (Especifique la funcionalidad).
-- **Productos y Tiendas** (`/products` y `/stores`): Información sobre productos y ubicaciones.
+---
 
+## Usage
+
+### Endpoints
+
+- **Home Page:** `/`
+- **Chatbot:** `/chatbot/`
+- **Map:** `/map/`
+- **Filter Data API:** `/filter_data/`
+- **Products:** `/products/`
+- **Stores:** `/stores/`
+
+### Example API Request
+
+To filter sales data for a specific store:
+
+```bash
+curl -X POST http://127.0.0.1:8000/filter_data/ -H "Content-Type: application/json" -d '{
+    "tienda": "Store_Name",
+    "fecha_inicio": "2023-01-01",
+    "fecha_fin": "2023-12-31"
+}'
+```
+
+---
+
+## Key Dependencies
+
+- **Django:** Web framework
+- **Pandas:** Data processing
+- **Folium:** Interactive maps
+- **Plotly:** Data visualization
+
+To view the complete list of dependencies, check `requiremetns.txt`.
+
+---
