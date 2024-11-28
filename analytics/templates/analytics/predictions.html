@@ -5,10 +5,11 @@
 
 {% block content %}
 <h1>Predictions Page</h1>
+<h3>Tienda mostrada: 59.0</h3>
 <div class="grid-container">
     {% for i in image_indices %}
     <div class="grid-item">
-        <img src="{% static 'data/prediction' %}{{ i }}.jpeg" alt="Prediction Table {{ i }}">
+        <img src="{% static 'data/prediccion' %}{{ i }}.jpeg" alt="Prediction Table {{ i }}">
     </div>
     {% endfor %}
 </div>

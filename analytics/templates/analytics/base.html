@@ -33,22 +33,10 @@
         <i class="fas fa-home"></i><span>Home</span>
       </a>
       <a
-        href="{% url 'chatbot' %}"
-        class="{% if request.resolver_match.url_name == 'chatbot' %}active{% endif %}"
-      >
-        <i class="fas fa-comments"></i><span>Chatbot</span>
-      </a>
-      <a
         href="{% url 'map' %}"
         class="{% if request.resolver_match.url_name == 'map' %}active{% endif %}"
       >
         <i class="fas fa-map"></i><span>Map</span>
-      </a>
-      <a
-        href="{% url 'predictions' %}"
-        class="{% if request.resolver_match.url_name == 'predictions' %}active{% endif %}"
-      >
-        <i class="fas fa-chart-line"></i><span>Predictions</span>
       </a>
       <a
         href="{% url 'products' %}"
@@ -62,6 +50,18 @@
       >
         <i class="fas fa-store"></i><span>Stores</span>
       </a>
+      <a
+      href="{% url 'predictions' %}"
+      class="{% if request.resolver_match.url_name == 'predictions' %}active{% endif %}"
+    >
+      <i class="fas fa-chart-line"></i><span>Predictions</span>
+    </a>
+      <a
+      href="{% url 'chatbot' %}"
+      class="{% if request.resolver_match.url_name == 'chatbot' %}active{% endif %}"
+    >
+      <i class="fas fa-comments"></i><span>Chatbot</span>
+    </a>
     </div>
     <div class="content">{% block content %} {% endblock %}</div>
 

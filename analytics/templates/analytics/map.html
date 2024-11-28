@@ -3,6 +3,8 @@
 {% block title %}Mapa Tiendas{% endblock %}
 
 {% block content %}
+    <p  id="selected-city"></p>
+
 <h1>Mapa de Ventas</h1>
 <div class="main-container">
     <!-- Columna Izquierda -->
@@ -36,21 +38,22 @@
                 <span id="inventory-quantity">-</span>
             </div>
             <div class="box num-productos-diferentes">
-                <h4>Número de Productos Diferentes</h4>
+                <h4>Productos Diferentes</h4>
                 <span id="num-different-products">-</span>
             </div>
         </div>
-        <div class="selected-city">
-            Ciudad seleccionada: <span id="selected-city">Ninguna</span>
-        </div>
         
-        <div class="charts-container" style="display: flex; gap: 20px;">
-            <div class="chart treemap-chart" id="treemap-chart">Top 10 Productos por Cantidad Vendida</div>
-            <div class="chart pie-chart" id="pie-chart">Segmento de Mercado por Productos</div>
+        <h4 class="maldita-sea" >Top 5 Productos por Cantidad Vendida</h4>
+        <div class="charts-container">
+            <div class="chart treemap-chart" id="treemap-chart"></div>
         </div>
-        <div class="chart violin-chart" id="violin-chart">Distribución de Ventas por Mes</div>
+
     </div>
+
 </div>
+<div class="espacio"></div>
+<div class="chart violin-chart" id="violin-chart">Distribución de Ventas por Mes</div>
+
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
 
@@ -76,77 +79,61 @@
         // Inicializar el mapa
         const map = L.map('map-container').setView([53.0, -1.5], 6);
 
+        function truncateText(text, maxLength = 12) {
+            if (text.length > maxLength) {
+                return text.slice(0, maxLength - 3) + '...';
+            }
+            return text;
+        }
+
         function initializeCharts() {
             const treemapData = [
                 {
                     type: "treemap",
-                    labels: ["Producto A", "Producto B", "Producto C", "Producto D",, "Producto E", "Producto F", "Producto G", "Producto H"],
-                    parents: ["", "", "", "","", "", "", ""],
-                    values: [500,400,300,30,100, 200, 150, 50],
+                    labels: ["Producto A", "Producto B", "Producto C", "Producto D", "Producto E"],
+                    parents: ["", "", "", "", ""],
+                    values: [500, 400, 300, 200, 100],
                     textinfo: "label+value",
-                    textfont: { size: 12 },
+                    textfont: { size: 14 },
                     marker: {
-                        colors: ['#040959', '#223E77', '#406396', '#5D89B4', '#7BAECF', '#94C0D9', '#ADD3E3', '#C6E5ED', '#E0F2F7', '#D6E6F2']
-
+                        colors: ['#040959', '#223E77', '#406396', '#5D89B4', '#7BAECF']
                     }
                 }
             ];
 
+
             const treemapLayout = {
-                width: 800, // Ancho deseado
+                width: 1000, // Ancho deseado
                 height: 600, // Alto deseado
-                automargin: false,
-                font: {
-                    size: 22 // Tamaño de la fuente global para los textos
-                }
             };
             
         
             Plotly.newPlot("treemap-chart", treemapData, treemapLayout);
         
-            const pieData = [
-                {
-                    type: "pie",
-                    labels: ["Segmento A", "Segmento B", "Segmento C", "Segmento D", "Segmento E", "Segmento F","Segmento G"],
-                    values: [100, 300, 50, 30, 20, 200, 300,],
-                    textinfo: "percent",
-                    hoverinfo: "label+value+percent",
-                    textfont: { size: 12 },
-                    marker: {
-                        colors: ['#040959', '#223E77', '#406396', '#5D89B4', '#7BAECF', '#94C0D9', '#ADD3E3', '#C6E5ED', '#E0F2F7', '#D6E6F2']
 
-                    }
-                }
-            ];
-
-            const pieLayout = {
-                width: undefined,
-                height: 400,
-                automargin: false
-            };
-        
-            Plotly.newPlot("pie-chart", pieData, pieLayout);
-
-            const violinData = [
+            const histogramData = [
             {
-                type: "violin",
-                x: ["January", "February", "March", "April", "May", "June"],
-                y: [1000, 1500, 1200, 1800, 1600, 1400],
-                box: { visible: true },
-                meanline: { visible: true },
-                line: { color: "#3b1ee0" }
+                type: "box",
+                x: ["January", "January", "February", "February", "March", "March"],
+                y: [5.99, 6.99, 4.99, 8.99, 7.49, 6.49],
+                boxpoints: "all",
+                jitter: 0.3,
+                pointpos: 0,
+                marker: { color: "#223E77" },
+                name: "Precios Mensuales"
             }
-            ];
-
-            const violinLayout = {
-                width: undefined,
-                height: 400,
-                yaxis: { title: "Ventas (£)" },
-                xaxis: { title: "Mes" },
-                automargin: false
-            };
+        ];
         
-            Plotly.newPlot("violin-chart", violinData, violinLayout);
+        const histogramLayout = {
+            width: 1800,
+            height: 400,
+            xaxis: { title: "Mes" },
+            yaxis: { title: "Precio de Producto (£)" },
+            automargin: false,
+        };
+        
+        Plotly.newPlot("violin-chart", histogramData, histogramLayout);
+        
 
 
         }
@@ -256,69 +243,64 @@
             document.getElementById('sales-by-store').innerText = formatCurrency(data.sales_by_store || 0);
             document.getElementById('inventory-quantity').innerText = data.inventory_quantity?.toLocaleString('en-GB') || '-';
             document.getElementById('num-different-products').innerText = data.num_different_products?.toLocaleString('en-GB') || '-';
+
+            const topProducts = data.top_products_quantity.names.slice(0, 5);
+            const topValues = data.top_products_quantity.values.slice(0, 5);
+
+            const labels = ["Producto Muy Largo A", "Producto Corto B", "Producto Excesivamente Largo C", "Producto D", "Producto E"];
+            const truncatedLabels = topProducts.map(label => truncateText(label));
+
+            const treemapLayout = {
+                width: 1000, // Ancho deseado
+                height: 600, // Alto deseado
+            };
+            
         
             const treemapData = [
                 {
                     type: "treemap",
-                    labels: data.top_products_quantity.names,
-                    parents: Array(data.top_products_quantity.names.length).fill(""),
-                    values: data.top_products_quantity.values,
+                    labels: truncatedLabels,
+                    parents: Array(topProducts.length).fill(""),
+                    values: topValues,
                     textinfo: "label+value",
-                    textfont: { size: 12 },
+                    textfont: { size: 14 },
                     marker: {
-                        colors: ['#040959', '#223E77', '#406396', '#5D89B4', '#7BAECF', '#94C0D9', '#ADD3E3', '#C6E5ED', '#E0F2F7', '#D6E6F2']
-
+                        colors: ['#040959', '#223E77', '#406396', '#5D89B4', '#7BAECF']
                     }
                 }
             ];
 
-        
-            Plotly.newPlot("treemap-chart", treemapData);
-        
-            // Datos para el Gráfico de Pastel
-            const pieData = [
-                {
-                    type: "pie",
-                    labels: data.top_products_quantity.names,
-                    values: data.top_products_quantity.values,
-                    textinfo: "percent",
-                    hoverinfo: "label+value+percent",
-                    textfont: { size: 12 },
-                    marker: {
-                        colors: ['#040959', '#223E77', '#406396', '#5D89B4', '#7BAECF', '#94C0D9', '#ADD3E3', '#C6E5ED', '#E0F2F7', '#D6E6F2']
-
-                    }
-                }
-            ];
 
         
-            Plotly.newPlot("pie-chart", pieData);
-
-            const boxplotData = [
-    {
-        type: "box",
-        y: data.monthly_sales.months, // Ahora los meses estarán en el eje Y
-        x: data.monthly_sales.sales, // Las ventas estarán en el eje X
-        boxpoints: "all", // Muestra todos los puntos dentro del boxplot
-        jitter: 0.3, // Añade un poco de separación entre los puntos
-        pointpos: 0, // Ajusta la posición de los puntos
-        marker: { color: "#040959" },
-    }
-];
+            Plotly.newPlot("treemap-chart", treemapData, treemapLayout);
 
 
+            const histogramData = [
+            {
+                type: "box",
+                x: data.sales_prices.months, // Meses desde la API
+                y: data.sales_prices.prices, // Precios desde la API
+                boxpoints: "all",
+                jitter: 0.3,
+                pointpos: 0,
+                marker: { color: "#223E77" },
+                name: "Precios Mensuales"
+            }
+        ];
 
-        const boxplotLayout = {
-            width: undefined,
-            height: 400,
-            xaxis: { title: "Ventas (£)" }, // Ventas ahora están en el eje X
-            yaxis: { title: "Mes" }, // Meses están en el eje Y
-            margin: { t: 50, l: 50, r: 50, b: 50 },
-            automargin: false
-        };
+
+
+            const histogramLayout = {
+                width: 1800,
+                height: 400,
+                xaxis: { title: "Mes" },
+                yaxis: { title: "Precio de Producto (£)" },
+                automargin: false,
+            };
+
             
         
-            Plotly.newPlot("violin-chart", boxplotData, boxplotLayout);
+            Plotly.newPlot("violin-chart", histogramData, histogramLayout);
         }
         
     });
@@ -395,5 +377,11 @@
         XLSX.writeFile({ Sheets: { 'Sheet1': chart2Sheet }, SheetNames: ['Sheet1'] }, 'ingresos.csv');
     }
 </script>
+
+<style>
+    #selected-city {
+        display: none; /* Oculta el elemento y no ocupa espacio */
+    }
+</style>
 
 {% endblock %}

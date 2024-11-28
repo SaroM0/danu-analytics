@@ -213,6 +213,10 @@ def get_city_data(request, city_name):
             "monthly_sales": {
                 "months": [],
                 "sales": []
+            },
+            "sales_prices": {
+                "months": [],
+                "prices": []
             }
             
         })
@@ -235,11 +239,13 @@ def get_city_data(request, city_name):
     
     city_data['SalesDate'] = pd.to_datetime(city_data['SalesDate'])
     city_data['Month'] = city_data['SalesDate'].dt.month_name()
+    
     monthly_sales = city_data.groupby('Month')['SalesDollars'].sum().reset_index()
     monthly_sales = monthly_sales.sort_values(by='Month', key=lambda x: pd.Categorical(x, categories=[
         "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
     ], ordered=True))
-
+    
+    sales_prices = city_data[['Month', 'SalesPrice']].dropna()
 
     response_data = {
         "total_sales": total_sales,
@@ -259,6 +265,10 @@ def get_city_data(request, city_name):
         "monthly_sales": {
             "months": monthly_sales['Month'].tolist(),
             "sales": monthly_sales['SalesDollars'].tolist()
+        },
+        "sales_prices": {
+            "months": sales_prices['Month'].tolist(),
+            "prices": sales_prices['SalesPrice'].tolist()
         }
     }
 
